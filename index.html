@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<meta name="description" content="A colorful, offline habit tracker.">
+<title>Habits</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1 id="title">Today</h1>
+  <button class="icon-btn" data-act="settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2.2" /><circle cx="10" cy="17" r="2.2" /></svg>
+  </button>
+</header>
+
+<main>
+  <section id="view-today" class="view" aria-label="Today"></section>
+  <section id="view-calendar" class="view" aria-label="Calendar" hidden></section>
+  <section id="view-history" class="view" aria-label="History" hidden></section>
+</main>
+
+<nav class="tabbar" aria-label="Sections">
+  <button data-tab="today" aria-current="page">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M8.2 12.3l2.5 2.5 5.1-5.3" /></svg>
+    <span>Today</span>
+  </button>
+  <button data-tab="calendar">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
+    <span>Calendar</span>
+  </button>
+  <button data-tab="history">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M10 20V6M15 20v-9M20 20V4" /></svg>
+    <span>History</span>
+  </button>
+</nav>
+
+<div id="tooltip" class="tooltip" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<dialog id="sheet" class="sheet"></dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
