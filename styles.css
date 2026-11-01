@@ -92,6 +92,8 @@ main {
   padding: 4px 16px calc(env(safe-area-inset-bottom) + 96px);
 }
 
+.credit { margin-top: 28px; text-align: center; font-size: 12px; letter-spacing: 0.04em; color: var(--ink-2); }
+
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
   display: flex; justify-content: center; gap: 4px;
