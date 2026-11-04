@@ -22,6 +22,8 @@ A colorful yes/no daily habit tracker for your phone. Each habit has its own col
 
 **Archive** hides a habit but keeps its history, and you can restore it from Settings. **Delete** removes the habit and all its history for good.
 
+**Language:** the app comes in English and Italian. The first time, it follows the phone's language; to change it, go to **Settings → Language**. Habit names stay as you typed them, so rename a habit if you want it in the other language; its history is kept.
+
 ## How the numbers work
 
 - **Streak:** days in a row done, counting back from today. If today isn't ticked yet, it counts from yesterday, so a streak doesn't drop to 0 every morning.
@@ -44,6 +46,7 @@ Open the GitHub Pages address in Chrome, then tap **⋮ → Install app**. The a
 |------|---------|
 | `index.html` | Page structure and the bottom tabs |
 | `styles.css` | Colors (follows the phone's light or dark setting) and layout |
+| `lang.js` | All the text, in English and Italian |
 | `app.js` | Habits, streaks, stats, calendar and charts |
 | `manifest.webmanifest` | App name, colors and icons for "Install app" |
 | `sw.js` | Offline support |

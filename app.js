@@ -8,13 +8,35 @@
 const STORE_KEY = 'habit-tracker-v1';
 const SEED = [['Muscles', '💪'], ['Brain', '🧠'], ['Couch', '🛋️'], ['Canvas', '🎨'], ['Connections', '🤝']];
 /* Fixed palette order, checked for color-blind separation between neighbors (see styles.css) */
-const SLOT_NAMES = ['Coral red', 'Violet', 'Teal', 'Amber', 'Blue', 'Green', 'Pink'];
-const RANGES = [[13, '3M'], [26, '6M'], [52, '1Y']];
+const SLOT_COUNT = 7;
+const RANGES = [[13, 'range3'], [26, 'range6'], [52, 'range12']];
 
 const $ = sel => document.querySelector(sel);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
 const pct = v => v == null ? '–' : Math.round(v * 100) + '%';
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+/* ---------- Language: the saved choice, otherwise the phone's language ---------- */
+const LANG_KEY = 'habit-tracker-lang';
+const phoneLang = navigator.language || '';
+let lang = /^it\b/i.test(phoneLang) ? 'it' : 'en';
+try { const saved = localStorage.getItem(LANG_KEY); if (saved === 'en' || saved === 'it') lang = saved; } catch (e) { /* storage blocked */ }
+const tr = (key, ...args) => args.reduce((s, a) => s.replace('{}', () => a), TEXT[lang][key]);
+/* Date format: the phone's own if it is in this language, otherwise a default for it */
+const locale = () => phoneLang.toLowerCase().startsWith(lang) ? phoneLang : lang === 'it' ? 'it-IT' : 'en-GB';
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-t]').forEach(el => { el.textContent = tr(el.dataset.t); });
+  document.querySelectorAll('[data-t-label]').forEach(el => el.setAttribute('aria-label', tr(el.dataset.tLabel)));
+  render();
+}
+function setLang(next) {
+  lang = next;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* storage blocked */ }
+  applyLang();
+}
 
 /* ---------- Dates (local calendar days as YYYY-MM-DD) ---------- */
 const pad = n => String(n).padStart(2, '0');
@@ -23,7 +45,7 @@ const dateOf = k => { const [y, m, d] = k.split('-').map(Number); return new Dat
 const addDays = (k, n) => { const d = dateOf(k); d.setDate(d.getDate() + n); return keyOf(d); };
 const todayKey = () => keyOf(new Date());
 const weekStart = k => { const d = dateOf(k); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return keyOf(d); };
-const fmt = (k, opts) => dateOf(k).toLocaleDateString(undefined, opts);
+const fmt = (k, opts) => dateOf(k).toLocaleDateString(locale(), opts);
 
 /* ---------- State ---------- */
 let state = load();
@@ -46,7 +68,7 @@ function load() {
 }
 function save() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-  catch (e) { toast('Could not save — storage is blocked or full'); }
+  catch (e) { toast(tr('saveFailed')); }
 }
 
 const active = () => state.habits.filter(h => !h.archived);
@@ -119,7 +141,7 @@ const onVar = h => h.custom ? (luma(h.custom) > 0.55 ? '#0b0b0b' : '#ffffff') : 
 const vars = h => `--c:${cVar(h)};--on:${onVar(h)}`;
 function nextSlot() {
   const used = new Set(active().map(h => h.slot));
-  for (let s = 1; s <= SLOT_NAMES.length; s++) if (!used.has(s)) return s;
+  for (let s = 1; s <= SLOT_COUNT; s++) if (!used.has(s)) return s;
   return null;
 }
 
@@ -132,7 +154,7 @@ const CHECK = '<svg viewBox="0 0 24 24"><path d="M5.5 12.5l4 4 9-9.5"/></svg>';
 
 function render() {
   if (ui.day > todayKey()) ui.day = todayKey();
-  $('#title').textContent = { today: 'Today', calendar: 'Calendar', history: 'History' }[ui.tab];
+  $('#title').textContent = tr(ui.tab);
   for (const b of document.querySelectorAll('.tabbar button')) {
     if (b.dataset.tab === ui.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   }
@@ -162,24 +184,24 @@ function ringSVG(hs, k) {
 function renderToday() {
   const t = todayKey(), k = ui.day, hs = active(), idx = index();
   const done = hs.filter(h => isDone(h.id, k)).length;
-  const dayName = k === t ? 'Today' : k === addDays(t, -1) ? 'Yesterday' : fmt(k, { weekday: 'long' });
-  const cheer = !hs.length ? '' : done === hs.length ? 'All done! 🎉' : done ? 'Keep going' : 'Let’s start';
+  const dayName = k === t ? tr('today') : k === addDays(t, -1) ? tr('yesterday') : cap(fmt(k, { weekday: 'long' }));
+  const cheer = !hs.length ? '' : done === hs.length ? tr('allDone') : done ? tr('keepGoing') : tr('letsStart');
   $('#view-today').innerHTML = `
     <div class="daynav">
-      <button class="icon-btn" data-act="day-prev" aria-label="Previous day">‹</button>
+      <button class="icon-btn" data-act="day-prev" aria-label="${tr('dayPrev')}">‹</button>
       <label class="daylabel">
         <span class="day-main">${dayName}</span>
         <span class="day-sub">${fmt(k, { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-        <input type="date" id="day-input" max="${t}" value="${k}" aria-label="Pick a day">
+        <input type="date" id="day-input" max="${t}" value="${k}" aria-label="${tr('dayPick')}">
       </label>
-      <button class="icon-btn" data-act="day-next" aria-label="Next day" ${k >= t ? 'disabled' : ''}>›</button>
+      <button class="icon-btn" data-act="day-next" aria-label="${tr('dayNext')}" ${k >= t ? 'disabled' : ''}>›</button>
     </div>
     ${hs.length ? `<div class="ring-wrap">${ringSVG(hs, k)}
       <div class="ring-text"><b>${done}/${hs.length}</b><span>${cheer}</span></div></div>` : ''}
-    ${k !== t ? '<button class="back-today" data-act="day-today">Back to today</button>' : ''}
+    ${k !== t ? `<button class="back-today" data-act="day-today">${tr('backToday')}</button>` : ''}
     <ul class="cards">${hs.map(h => card(h, k, idx.get(h.id), t)).join('')}</ul>
-    ${hs.length ? '' : '<p class="empty-note">No habits yet. Add your first one!</p>'}
-    <button class="add-btn" data-act="add">+ Add habit</button>`;
+    ${hs.length ? '' : `<p class="empty-note">${tr('noHabits')}</p>`}
+    <button class="add-btn" data-act="add">${tr('addHabit')}</button>`;
 }
 
 function card(h, k, set, t) {
@@ -189,11 +211,11 @@ function card(h, k, set, t) {
       <span class="emoji" aria-hidden="true">${esc(h.emoji || '•')}</span>
       <span class="card-text">
         <span class="name">${esc(h.name)}</span>
-        <span class="meta">${streak ? `🔥 ${streak} day${streak > 1 ? 's' : ''} streak` : 'No streak yet'}</span>
+        <span class="meta">${streak === 1 ? tr('streakOne') : streak ? tr('streakMany', streak) : tr('noStreak')}</span>
       </span>
       <span class="check" aria-hidden="true">${CHECK}</span>
     </button>
-    <button class="card-more" data-act="edit" data-id="${h.id}" aria-label="Edit ${esc(h.name)}">⋯</button>
+    <button class="card-more" data-act="edit" data-id="${h.id}" aria-label="${tr('editAria', esc(h.name))}">⋯</button>
   </div></li>`;
 }
 
@@ -234,10 +256,10 @@ function renderCalendar() {
   const [y, m] = ui.month.split('-').map(Number);
   const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;
   const daysIn = new Date(y, m, 0).getDate();
-  const monthName = new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const monthName = cap(new Date(y, m - 1, 1).toLocaleDateString(locale(), { month: 'long', year: 'numeric' }));
 
   const wd = [];
-  for (let i = 0; i < 7; i++) wd.push(`<div class="wd">${new Date(2024, 0, 1 + i).toLocaleDateString(undefined, { weekday: 'narrow' })}</div>`);
+  for (let i = 0; i < 7; i++) wd.push(`<div class="wd">${new Date(2024, 0, 1 + i).toLocaleDateString(locale(), { weekday: 'narrow' })}</div>`);
   const cells = [];
   for (let i = 0; i < lead; i++) cells.push('<div></div>');
   for (let d = 1; d <= daysIn; d++) {
@@ -252,11 +274,11 @@ function renderCalendar() {
       if (done) cls.push('done');
       style = vars(single);
       inner = `<span class="num">${d}</span>`;
-      label = `${fmt(k, { day: 'numeric', month: 'long' })}: ${single.name} ${done ? 'done' : 'not done'}`;
+      label = tr(done ? 'calDone' : 'calNotDone', fmt(k, { day: 'numeric', month: 'long' }), single.name);
     } else {
       if (hs.length && nDone === hs.length) cls.push('perfect');
       inner = `<span class="num">${d}</span>${future ? '' : flowerSVG(hs, k, idx)}`;
-      label = `${fmt(k, { day: 'numeric', month: 'long' })}: ${nDone} of ${hs.length} done`;
+      label = tr('calCount', fmt(k, { day: 'numeric', month: 'long' }), nDone, hs.length);
     }
     cells.push(`<button class="${cls.join(' ')}" style="${style}" data-act="cal-day" data-k="${k}" aria-label="${esc(label)}" ${future ? 'disabled' : ''}>${inner}</button>`);
   }
@@ -280,24 +302,24 @@ function renderCalendar() {
 
   const nowMonth = t.slice(0, 7);
   $('#view-calendar').innerHTML = `
-    <div class="chips" role="group" aria-label="Show habit">
-      <button class="chip" data-act="filter" data-id="all" aria-pressed="${!single}">All</button>
+    <div class="chips" role="group" aria-label="${tr('showHabit')}">
+      <button class="chip" data-act="filter" data-id="all" aria-pressed="${!single}">${tr('all')}</button>
       ${hs.map(h => `<button class="chip" style="${vars(h)}" data-act="filter" data-id="${h.id}" aria-pressed="${single === h}">
         <span class="dot"></span>${esc(h.name)}</button>`).join('')}
     </div>
     <div class="card-box">
       <div class="monthnav">
-        <button class="icon-btn" data-act="month-prev" aria-label="Previous month">‹</button>
+        <button class="icon-btn" data-act="month-prev" aria-label="${tr('monthPrev')}">‹</button>
         <h2>${monthName}</h2>
-        <button class="icon-btn" data-act="month-next" aria-label="Next month" ${ui.month >= nowMonth ? 'disabled' : ''}>›</button>
+        <button class="icon-btn" data-act="month-next" aria-label="${tr('monthNext')}" ${ui.month >= nowMonth ? 'disabled' : ''}>›</button>
       </div>
       <div class="cal" id="cal-grid">${wd.join('')}${cells.join('')}</div>
     </div>
-    ${hs.length ? `<div class="card-box"><h2>This month</h2>
-      <p class="sub">Days done out of days tracked${monthEnd < t ? '' : ' so far'}</p>
+    ${hs.length ? `<div class="card-box"><h2>${tr('thisMonth')}</h2>
+      <p class="sub">${tr(monthEnd < t ? 'sumSub' : 'sumSubNow')}</p>
       <div class="month-sum">${rows}</div></div>` : ''}
     <p class="sub" style="text-align:center;color:var(--muted);font-size:13px">
-      ${single ? 'Tap a day to tick or untick it.' : 'Tap a day to edit it.'}</p>`;
+      ${tr(single ? 'tapTick' : 'tapEdit')}</p>`;
 }
 
 function shiftMonth(n) {
@@ -373,7 +395,7 @@ function barsSVG(hs, idx, t, weeks, W) {
     }
   }
   out += `<line class="baseline" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}"/>`;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Days done per week, stacked by habit">${out}</svg>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${tr('barsAria')}">${out}</svg>`;
 }
 
 function trendSVG(hs, idx, t, weeks, W) {
@@ -414,7 +436,7 @@ function trendSVG(hs, idx, t, weeks, W) {
   out += `<g id="cross" hidden><line class="cross" y1="${T}" y2="${T + ih}"/>${series.map(s => `<circle class="cross-dot" r="4.5" style="fill:${cVar(s.h)}"/>`).join('')}</g>`;
   out += `<rect class="hit" data-cross="1" x="${L}" y="${T}" width="${iw}" height="${ih}"/>`;
   crossData = { keys, series, x, y, L, iw, days };
-  return `<svg class="chart" id="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="Rolling 30-day completion rate per habit">${out}</svg>`;
+  return `<svg class="chart" id="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="${tr('rateAria')}">${out}</svg>`;
 }
 
 function heatmapSVG(h, set, t) {
@@ -423,7 +445,7 @@ function heatmapSVG(h, set, t) {
   const start = startOf(h, set);
   const W = L + weeks * st, H = T + 7 * st;
   let out = '';
-  ['M', '', 'W', '', 'F', '', ''].forEach((l, d) => { if (l) out += `<text x="0" y="${T + d * st + 10}">${l}</text>`; });
+  tr('hmDays').forEach((l, d) => { if (l) out += `<text x="0" y="${T + d * st + 10}">${l}</text>`; });
   let lastMonth = '';
   for (let w = 0; w < weeks; w++) {
     const ws = addDays(first, w * 7);
@@ -436,45 +458,45 @@ function heatmapSVG(h, set, t) {
       if (k > t) break;
       const done = set.has(k);
       const fill = done ? cVar(h) : k < start ? 'var(--empty-faint)' : 'var(--empty)';
-      const label = `${fmt(k, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · ${done ? 'done ✓' : k < start ? 'not tracked yet' : 'not done'}`;
+      const label = `${fmt(k, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · ${tr(done ? 'hmDone' : k < start ? 'hmNotYet' : 'hmNotDone')}`;
       out += `<rect x="${L + w * st}" y="${T + d * st}" width="${cell}" height="${cell}" rx="3" style="fill:${fill}" data-tip="${esc(label)}"/>`;
     }
   }
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(h.name)}: last 12 months, one square per day">${out}</svg>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${tr('hmAria', esc(h.name))}">${out}</svg>`;
 }
 
 function renderHistory() {
   const hs = active(), t = todayKey(), idx = index(), W = chartWidth();
   tips = [];
-  if (!hs.length) { $('#view-history').innerHTML = '<p class="empty-note">Add a habit to see its history.</p>'; return; }
+  if (!hs.length) { $('#view-history').innerHTML = `<p class="empty-note">${tr('noHistory')}</p>`; return; }
   const per = hs.map(h => {
     const set = idx.get(h.id), start = startOf(h, set);
     return `<div class="card-box" style="${vars(h)}">
       <div class="habit-head"><span class="emoji" aria-hidden="true">${esc(h.emoji || '•')}</span><h2>${esc(h.name)}</h2>
-        <span class="badge">${set.size} day${set.size === 1 ? '' : 's'} done</span></div>
+        <span class="badge">${set.size === 1 ? tr('doneOne') : tr('doneMany', set.size)}</span></div>
       <div class="tiles">
-        <div class="tile"><b>${currentStreak(set, t)}</b><span>🔥 Streak</span></div>
-        <div class="tile"><b>${bestStreak(set)}</b><span>Best</span></div>
-        <div class="tile"><b>${pct(rate(set, start, t, 7))}</b><span>7 days</span></div>
-        <div class="tile"><b>${pct(rate(set, start, t, 30))}</b><span>30 days</span></div>
-        <div class="tile"><b>${pct(rate(set, start, t, 90))}</b><span>90 days</span></div>
+        <div class="tile"><b>${currentStreak(set, t)}</b><span>${tr('tileStreak')}</span></div>
+        <div class="tile"><b>${bestStreak(set)}</b><span>${tr('tileBest')}</span></div>
+        <div class="tile"><b>${pct(rate(set, start, t, 7))}</b><span>${tr('days7')}</span></div>
+        <div class="tile"><b>${pct(rate(set, start, t, 30))}</b><span>${tr('days30')}</span></div>
+        <div class="tile"><b>${pct(rate(set, start, t, 90))}</b><span>${tr('days90')}</span></div>
       </div>
       <div class="hm-scroll">${heatmapSVG(h, set, t)}</div>
     </div>`;
   }).join('');
   $('#view-history').innerHTML = `
-    <div class="chips" role="group" aria-label="Time range">
-      ${RANGES.map(([w, l]) => `<button class="chip" data-act="range" data-w="${w}" aria-pressed="${ui.weeks === w}">${l}</button>`).join('')}
+    <div class="chips" role="group" aria-label="${tr('timeRange')}">
+      ${RANGES.map(([w, l]) => `<button class="chip" data-act="range" data-w="${w}" aria-pressed="${ui.weeks === w}">${tr(l)}</button>`).join('')}
     </div>
     <div class="card-box">
-      <h2>Days done per week</h2>
-      <p class="sub">Each color is one habit · max ${7 * hs.length} per week</p>
+      <h2>${tr('barsTitle')}</h2>
+      <p class="sub">${tr('barsSub', 7 * hs.length)}</p>
       ${legend(hs)}
       ${barsSVG(hs, idx, t, ui.weeks, W)}
     </div>
     <div class="card-box">
-      <h2>Completion rate</h2>
-      <p class="sub">Share of the last 30 days done, day by day</p>
+      <h2>${tr('rateTitle')}</h2>
+      <p class="sub">${tr('rateSub')}</p>
       ${legend(hs)}
       ${trendSVG(hs, idx, t, ui.weeks, W)}
     </div>
@@ -546,29 +568,29 @@ function editSheet(h) {
   const isNew = !h;
   const slot = isNew ? nextSlot() : h.slot;
   const custom = isNew ? (slot ? null : '#7a5af8') : h.custom;
-  const sw = SLOT_NAMES.map((n, i) => `<button type="button" class="swatch" style="--c:var(--slot-${i + 1})" data-slot="${i + 1}"
+  const sw = tr('slots').map((n, i) => `<button type="button" class="swatch" style="--c:var(--slot-${i + 1})" data-slot="${i + 1}"
       aria-label="${n}" aria-pressed="${!custom && slot === i + 1}"></button>`).join('');
   openSheet(`<form id="habit-form" method="dialog">
-    <h2>${isNew ? 'New habit' : 'Edit habit'}</h2>
+    <h2>${tr(isNew ? 'newHabit' : 'editHabit')}</h2>
     <div class="row">
-      <label class="field emoji-field"><span>Emoji</span><input type="text" name="emoji" value="${esc(isNew ? '⭐' : h.emoji || '')}" maxlength="8"></label>
-      <label class="field" style="flex:1"><span>Name</span><input type="text" name="name" value="${esc(isNew ? '' : h.name)}" maxlength="40" required placeholder="e.g. Water"></label>
+      <label class="field emoji-field"><span>${tr('emoji')}</span><input type="text" name="emoji" value="${esc(isNew ? '⭐' : h.emoji || '')}" maxlength="8"></label>
+      <label class="field" style="flex:1"><span>${tr('name')}</span><input type="text" name="name" value="${esc(isNew ? '' : h.name)}" maxlength="40" required placeholder="${tr('namePlaceholder')}"></label>
     </div>
-    <div class="field" style="margin-top:14px"><span>Color</span>
+    <div class="field" style="margin-top:14px"><span>${tr('color')}</span>
       <div class="swatches">${sw}
-        <label class="swatch custom" aria-label="Custom color" aria-pressed="${!!custom}"><input type="color" name="custom" value="${custom || '#7a5af8'}"></label>
+        <label class="swatch custom" aria-label="${tr('customColor')}" aria-pressed="${!!custom}"><input type="color" name="custom" value="${custom || '#7a5af8'}"></label>
       </div>
     </div>
     <input type="hidden" name="slot" value="${custom ? '' : slot}">
     <input type="hidden" name="useCustom" value="${custom ? '1' : ''}">
     <div class="btns">
-      <button type="button" class="btn" data-act="sheet-close">Cancel</button>
-      <button type="submit" class="btn primary">${isNew ? 'Add' : 'Save'}</button>
+      <button type="button" class="btn" data-act="sheet-close">${tr('cancel')}</button>
+      <button type="submit" class="btn primary">${tr(isNew ? 'add' : 'save')}</button>
     </div>
     ${isNew ? '' : `<div class="btns">
-      <button type="button" class="btn" data-act="archive" data-id="${h.id}">Archive</button>
-      <button type="button" class="btn danger" data-act="delete" data-id="${h.id}">Delete</button></div>
-      <p style="margin-top:10px;font-size:13px">Archive hides the habit but keeps its history. Delete removes it and all its history.</p>`}
+      <button type="button" class="btn" data-act="archive" data-id="${h.id}">${tr('archive')}</button>
+      <button type="button" class="btn danger" data-act="delete" data-id="${h.id}">${tr('delete')}</button></div>
+      <p style="margin-top:10px;font-size:13px">${tr('archiveNote')}</p>`}
   </form>`);
   const form = $('#habit-form'), f = form.elements;
   form.addEventListener('click', e => {
@@ -604,21 +626,26 @@ function editSheet(h) {
 function settingsSheet() {
   const archived = state.habits.filter(h => h.archived);
   const demo = /[?&]demo\b/.test(location.search);
-  openSheet(`<h2>Settings</h2>
-    <h3>Backup</h3>
-    <p>Your habits are stored only on this phone. Export a backup now and then — clearing Chrome’s data or changing phones would erase them.</p>
-    <div class="btns" style="margin-top:0">
-      <button class="btn" data-act="export">Export backup</button>
-      <label class="btn">Import backup<input type="file" accept="application/json,.json" id="import-file" hidden></label>
+  openSheet(`<h2>${tr('settings')}</h2>
+    <h3>${tr('language')}</h3>
+    <div class="chips" role="group" aria-label="${tr('language')}">
+      <button class="chip" data-act="lang" data-lang="en" lang="en" aria-pressed="${lang === 'en'}">English</button>
+      <button class="chip" data-act="lang" data-lang="it" lang="it" aria-pressed="${lang === 'it'}">Italiano</button>
     </div>
-    <h3>Archived habits</h3>
+    <h3>${tr('backup')}</h3>
+    <p>${tr('backupNote')}</p>
+    <div class="btns" style="margin-top:0">
+      <button class="btn" data-act="export">${tr('exportBackup')}</button>
+      <label class="btn">${tr('importBackup')}<input type="file" accept="application/json,.json" id="import-file" hidden></label>
+    </div>
+    <h3>${tr('archivedHabits')}</h3>
     ${archived.length ? archived.map(h => `<div class="list-row" style="${vars(h)}"><span class="dot"></span>
       <span class="name">${esc(h.emoji || '')} ${esc(h.name)}</span>
-      <button class="btn" data-act="restore" data-id="${h.id}">Restore</button></div>`).join('') : '<p>None.</p>'}
-    ${demo ? `<h3>Demo</h3><div class="btns" style="margin-top:0">
-      <button class="btn" data-act="demo">Load sample year</button>
-      <button class="btn danger" data-act="reset">Reset everything</button></div>` : ''}
-    <div class="btns"><button class="btn primary" data-act="sheet-close">Done</button></div>`);
+      <button class="btn" data-act="restore" data-id="${h.id}">${tr('restore')}</button></div>`).join('') : `<p>${tr('none')}</p>`}
+    ${demo ? `<h3>${tr('demo')}</h3><div class="btns" style="margin-top:0">
+      <button class="btn" data-act="demo">${tr('loadSample')}</button>
+      <button class="btn danger" data-act="reset">${tr('resetAll')}</button></div>` : ''}
+    <div class="btns"><button class="btn primary" data-act="sheet-close">${tr('done')}</button></div>`);
   $('#import-file').addEventListener('change', importFile);
 }
 
@@ -631,7 +658,7 @@ function exportData() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast('Backup saved');
+  toast(tr('backupSaved'));
 }
 function importFile(e) {
   const f = e.target.files[0];
@@ -639,18 +666,18 @@ function importFile(e) {
   f.text().then(txt => {
     const s = JSON.parse(txt);
     if (!valid(s)) throw new Error('bad file');
-    if (!confirm('Replace all current habits and history with this backup?')) return;
+    if (!confirm(tr('confirmImport'))) return;
     state = s;
     save();
     sheet.close();
     render();
-    toast('Backup restored');
-  }).catch(() => toast('That file is not a habits backup'));
+    toast(tr('backupRestored'));
+  }).catch(() => toast(tr('notBackup')));
 }
 
 /* Sample data for trying out the charts (only reachable with ?demo in the URL) */
 function loadDemo() {
-  if (!confirm('Replace everything with a year of random sample data?')) return;
+  if (!confirm(tr('confirmDemo'))) return;
   const s = seedState(), t = todayKey(), start = addDays(t, -364);
   const odds = [[0.75, 0.35], [0.85, 0.5], [0.6, 0.25], [0.7, 0.2], [0.9, 0.55]];
   s.habits.forEach((h, j) => {
@@ -705,10 +732,10 @@ document.addEventListener('click', e => {
     case 'add': editSheet(null); break;
     case 'edit': editSheet(h); break;
     case 'sheet-close': sheet.close(); break;
-    case 'archive': h.archived = true; save(); sheet.close(); render(); toast(`${h.name} archived`); break;
+    case 'archive': h.archived = true; save(); sheet.close(); render(); toast(tr('archived', h.name)); break;
     case 'restore': h.archived = false; save(); settingsSheet(); render(); break;
     case 'delete':
-      if (confirm(`Delete “${h.name}” and all its history? This cannot be undone.`)) {
+      if (confirm(tr('confirmDelete', h.name))) {
         state.habits = state.habits.filter(x => x !== h);
         for (const k in state.log) {
           state.log[k] = state.log[k].filter(x => x !== id);
@@ -718,10 +745,11 @@ document.addEventListener('click', e => {
       }
       break;
     case 'settings': settingsSheet(); break;
+    case 'lang': setLang(b.dataset.lang); settingsSheet(); break;
     case 'export': exportData(); break;
     case 'demo': loadDemo(); break;
     case 'reset':
-      if (confirm('Erase all habits and history?')) { state = seedState(); save(); sheet.close(); render(); }
+      if (confirm(tr('confirmReset'))) { state = seedState(); save(); sheet.close(); render(); }
       break;
     case 'filter': ui.filter = id; render(); break;
     case 'month-prev': shiftMonth(-1); break;
@@ -770,7 +798,7 @@ document.addEventListener('visibilitychange', () => {
   if (t !== lastDay) { if (ui.day === lastDay) ui.day = t; lastDay = t; render(); }
 });
 
-render();
+applyLang();
 
 /* ---------- Offline support ---------- */
 if ('serviceWorker' in navigator) {

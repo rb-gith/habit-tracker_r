@@ -15,30 +15,30 @@
 <body>
 <header class="topbar">
   <h1 id="title">Today</h1>
-  <button class="icon-btn" data-act="settings" aria-label="Settings">
+  <button class="icon-btn" data-act="settings" data-t-label="settings">
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2.2" /><circle cx="10" cy="17" r="2.2" /></svg>
   </button>
 </header>
 
 <main>
-  <section id="view-today" class="view" aria-label="Today"></section>
-  <section id="view-calendar" class="view" aria-label="Calendar" hidden></section>
-  <section id="view-history" class="view" aria-label="History" hidden></section>
-  <footer class="credit">made by gionzana · <a href="https://buymeacoffee.com/gionzana" target="_blank" rel="noopener">☕ buy me a coffee</a></footer>
+  <section id="view-today" class="view" data-t-label="today"></section>
+  <section id="view-calendar" class="view" data-t-label="calendar" hidden></section>
+  <section id="view-history" class="view" data-t-label="history" hidden></section>
+  <footer class="credit"><span data-t="madeBy"></span> · <a href="https://buymeacoffee.com/gionzana" target="_blank" rel="noopener" data-t="coffee"></a></footer>
 </main>
 
-<nav class="tabbar" aria-label="Sections">
+<nav class="tabbar" data-t-label="sections">
   <button data-tab="today" aria-current="page">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M8.2 12.3l2.5 2.5 5.1-5.3" /></svg>
-    <span>Today</span>
+    <span data-t="today"></span>
   </button>
   <button data-tab="calendar">
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
-    <span>Calendar</span>
+    <span data-t="calendar"></span>
   </button>
   <button data-tab="history">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M10 20V6M15 20v-9M20 20V4" /></svg>
-    <span>History</span>
+    <span data-t="history"></span>
   </button>
 </nav>
 
@@ -46,6 +46,7 @@
 <div id="toast" class="toast" role="status" hidden></div>
 <dialog id="sheet" class="sheet"></dialog>
 
+<script src="lang.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
