@@ -2,7 +2,7 @@
   "name": "Habits",
   "short_name": "Habits",
   "description": "A colorful, offline habit tracker.",
-  "id": "./",
+  "id": "/habit-tracker_r/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
