@@ -15,6 +15,8 @@ const TEXT = {
     settings: 'Settings',
     madeBy: 'made by gionzana',
     coffee: '☕ buy me a coffee',
+    moreApps: 'find more',
+    moreAppsLink: 'apps by me',
     slots: ['Coral red', 'Violet', 'Teal', 'Amber', 'Blue', 'Green', 'Pink'],
 
     yesterday: 'Yesterday',
@@ -115,6 +117,8 @@ const TEXT = {
     settings: 'Impostazioni',
     madeBy: 'creata da gionzana',
     coffee: '☕ offrimi un caffè',
+    moreApps: 'trova altre',
+    moreAppsLink: 'mie app',
     slots: ['Rosso corallo', 'Viola', 'Verde acqua', 'Ambra', 'Blu', 'Verde', 'Rosa'],
 
     yesterday: 'Ieri',

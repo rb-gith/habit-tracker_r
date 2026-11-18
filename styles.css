@@ -304,6 +304,16 @@ main {
 .swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
 .swatch.custom { position: relative; overflow: hidden; background: conic-gradient(var(--slot-1), var(--slot-4), var(--slot-3), var(--slot-5), var(--slot-2), var(--slot-1)); }
 .swatch.custom input { position: absolute; inset: -8px; width: 60px; height: 60px; opacity: 0; cursor: pointer; }
+/* Top bar of the add/edit panel: Cancel and Save stay above the keyboard (same layout in every app) */
+.sheet-bar {
+  position: sticky; top: -20px; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  margin: -20px -16px 16px; padding: 12px 12px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.sheet .sheet-bar h2 { flex: 1; min-width: 0; margin: 0; text-align: center; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-btn { min-height: 40px; padding: 8px 12px; border-radius: 999px; font-weight: 650; color: var(--ink-2); }
+.bar-btn.primary { padding: 8px 18px; background: var(--ink); color: var(--page); }
 .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .btn {
   flex: 1; min-width: 120px; padding: 13px 14px; border-radius: 14px;

@@ -1,5 +1,5 @@
 // Bump VERSION whenever any app file changes, so phones download the new version.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = 'habits-' + VERSION;
 const ASSETS = [
   './',

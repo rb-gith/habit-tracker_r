@@ -571,7 +571,11 @@ function editSheet(h) {
   const sw = tr('slots').map((n, i) => `<button type="button" class="swatch" style="--c:var(--slot-${i + 1})" data-slot="${i + 1}"
       aria-label="${n}" aria-pressed="${!custom && slot === i + 1}"></button>`).join('');
   openSheet(`<form id="habit-form" method="dialog">
-    <h2>${tr(isNew ? 'newHabit' : 'editHabit')}</h2>
+    <div class="sheet-bar">
+      <button type="button" class="bar-btn" data-act="sheet-close">${tr('cancel')}</button>
+      <h2>${tr(isNew ? 'newHabit' : 'editHabit')}</h2>
+      <button type="submit" class="bar-btn primary">${tr(isNew ? 'add' : 'save')}</button>
+    </div>
     <div class="row">
       <label class="field emoji-field"><span>${tr('emoji')}</span><input type="text" name="emoji" value="${esc(isNew ? '⭐' : h.emoji || '')}" maxlength="8"></label>
       <label class="field" style="flex:1"><span>${tr('name')}</span><input type="text" name="name" value="${esc(isNew ? '' : h.name)}" maxlength="40" required placeholder="${tr('namePlaceholder')}"></label>
@@ -583,10 +587,6 @@ function editSheet(h) {
     </div>
     <input type="hidden" name="slot" value="${custom ? '' : slot}">
     <input type="hidden" name="useCustom" value="${custom ? '1' : ''}">
-    <div class="btns">
-      <button type="button" class="btn" data-act="sheet-close">${tr('cancel')}</button>
-      <button type="submit" class="btn primary">${tr(isNew ? 'add' : 'save')}</button>
-    </div>
     ${isNew ? '' : `<div class="btns">
       <button type="button" class="btn" data-act="archive" data-id="${h.id}">${tr('archive')}</button>
       <button type="button" class="btn danger" data-act="delete" data-id="${h.id}">${tr('delete')}</button></div>
